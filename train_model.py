@@ -152,12 +152,30 @@ opt = Adam(learning_rate=conf["init_lr"], decay=conf["init_lr"] / conf["num_epoc
 model.compile(loss="categorical_crossentropy", optimizer=opt, metrics=["accuracy"])
 print(model.summary())
 
+# Adding early stopping to help prevent overfitting
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+
+early_stop = EarlyStopping(
+    monitor="val_loss",
+    patience=5,
+    restore_best_weights=True
+)
+
+lr_schedule = ReduceLROnPlateau(
+    monitor="val_loss",
+    factor=0.5,
+    patience=2,
+    min_lr=1e-6,
+    verbose=1
+)
+
 # ------------------- TRAIN NETWORK -------------------
 H = model.fit(
     aug.flow(trainX, trainY, batch_size=conf["bs"]),
     validation_data=(testX, testY),
     steps_per_epoch=len(trainX) // conf["bs"],
-    epochs=conf["num_epochs"]
+    epochs=conf["num_epochs"],
+    callbacks=[early_stop, lr_schedule] # for the early stopping
 )
 
 # ------------------- EVALUATE NETWORK -------------------
